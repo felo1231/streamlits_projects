@@ -1,2 +1,0 @@
-# streamlits_projects
-.

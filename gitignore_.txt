@@ -1,0 +1,6 @@
+# تجاهل المجلدات والملفات الحساسة
+venv/
+__pycache__/
+credentials.json
+token.json
+.env
