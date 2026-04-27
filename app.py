@@ -17,22 +17,21 @@ SCOPES = [
 
 # 2. الدوال المساعدة
 def get_services():
-    creds = None
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    # نستخدم st.secrets لقراءة البيانات الحساسة
+    creds_info = st.secrets["GOOGLE_CREDENTIALS"]
+    
+    # تحويل البيانات إلى كائن Credentials
+    creds = Credentials.from_authorized_user_info(creds_info, SCOPES)
+    
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-        with open('token.json', 'w') as token:
-            token.write(creds.to_json())
-    
+            
     drive_service = build('drive', 'v3', credentials=creds)
     docs_service = build('docs', 'v1', credentials=creds)
     return drive_service, docs_service
 
+    
 def upload_and_convert(drive_service, file_path):
     file_metadata = {
         'name': 'Converted_PDF_to_Doc',
