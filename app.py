@@ -9,6 +9,61 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.http import MediaFileUpload
 
+st.markdown("""
+    <style>
+    .stApp {
+        background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+        background-size: 400% 400%;
+        animation: gradient 15s ease infinite;
+    }
+
+    @keyframes gradient {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    .main .block-container {
+        background: rgba(255, 255, 255, 0.92);
+        padding: 2.5rem;
+        border-radius: 20px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(8px);
+        margin-top: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .main-title {
+        color: #0f172a;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-weight: 800;
+        font-size: 2.3rem;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+
+    div.stButton > button {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        color: #ffffff;
+        border-radius: 10px;
+        padding: 12px 28px;
+        font-weight: 700;
+        font-size: 1rem;
+        border: none;
+        width: 100%;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+    }
+
+    div.stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.35);
+        color: #38bdf8;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+
 # 1. إعداد الصلاحيات
 SCOPES = [
     'https://www.googleapis.com/auth/drive',
