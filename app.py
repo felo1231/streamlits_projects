@@ -3,11 +3,9 @@ import os
 import asyncio
 import edge_tts
 import tempfile
-from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-from googleapiclient.http import MediaFileUpload
 
 st.markdown("""
     <style>
@@ -69,22 +67,6 @@ SCOPES = [
     'https://www.googleapis.com/auth/drive',
     'https://www.googleapis.com/auth/documents.readonly'
 ]
-
-# 2. الدوال المساعدة
-def get_services():
-    # نستخدم st.secrets لقراءة البيانات الحساسة
-    creds_info = st.secrets["GOOGLE_CREDENTIALS"]
-    
-    # تحويل البيانات إلى كائن Credentials
-    creds = Credentials.from_authorized_user_info(creds_info, SCOPES)
-    
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-            
-    drive_service = build('drive', 'v3', credentials=creds)
-    docs_service = build('docs', 'v1', credentials=creds)
-    return drive_service, docs_service
 
     
 def upload_and_convert(drive_service, file_path):
