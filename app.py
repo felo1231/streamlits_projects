@@ -38,7 +38,7 @@ st.markdown("""
         color: #000000 !important;
     }
     
-    /* 4. تعديل نصوص الـ Labels (مثل عنوان خانة الرفع) لتكون سوداء واضحة فوق الخلفية البيضاء */
+    /* 4. تعديل نصوص الـ Labels (مثل عنوان خانة الرفع واختيار الصوت) لتكون سوداء واضحة فوق الخلفية البيضاء */
     .main label p {
         color: #000000 !important;
         font-weight: 600;
@@ -64,11 +64,14 @@ st.markdown("""
         box-shadow: 0 6px 16px rgba(0,0,0,0.25);
     }
     
-    /* 6. إصلاح ألوان نصوص صندوق رفع الملفات ليعود واضحاً وقابلاً للقراءة */
+    /* 6. إصلاح ألوان نصوص صندوق رفع الملفات وقائمة الاختيار ليعود واضحاً وقابلاً للقراءة */
     div[data-testid="stFileUploader"] section {
         color: #31333F !important;
     }
     div[data-testid="stFileUploader"] button {
+        color: #31333F !important;
+    }
+    div[data-testid="stSelectbox"] div {
         color: #31333F !important;
     }
     </style>
@@ -106,13 +109,26 @@ def extract_text_from_pdf(pdf_file):
             
     return clean_and_fix_text(text)
 
-# دالة تحويل النص إلى صوت باستخدام نظام ملائم للغتين
-async def generate_audio(text, output_file):
-    communicate = edge_tts.Communicate(text, "ar-EG-SalmaNeural")
+# دالة تحويل النص إلى صوت بناءً على اختيار المستخدم
+async def generate_audio(text, voice_id, output_file):
+    communicate = edge_tts.Communicate(text, voice_id)
     await communicate.save(output_file)
 
 # واجهة التطبيق الرئيسية
 st.title("📚 قارئ الملزمة الذكي المطور")
+
+# 1. قائمة اختيار الصوت الذكي
+voices_options = {
+    "سلمى (نسائي - مصر) 🇪🇬": "ar-EG-SalmaNeural",
+    "شاكر (رجالي - مصر) 🇪🇬": "ar-EG-ShakirNeural",
+    "فاطمة (نسائي - الإمارات) 🇦🇪": "ar-AE-FatimaNeural",
+    "حمدان (رجالي - الإمارات) 🇦🇪": "ar-AE-HamdanNeural"
+}
+
+selected_voice_label = st.selectbox("اختر الصوت الذي تفضله للقراءة:", list(voices_options.keys()))
+selected_voice_id = voices_options[selected_voice_label]
+
+# 2. خانة رفع الملف
 uploaded_file = st.file_uploader("ارفع ملف الـ PDF هنا:", type="pdf")
 
 if uploaded_file is not None:
@@ -129,9 +145,9 @@ if uploaded_file is not None:
                     with st.expander("عرض النص بعد المعالجة والتصحيح"):
                         st.write(full_text)
                     
-                    with st.spinner("جاري توليد الصوت النقي (عربي + إنجليزي لغات)..."):
+                    with st.spinner(f"جاري توليد الصوت باستخدام صوت {selected_voice_label}..."):
                         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_audio:
-                            asyncio.run(generate_audio(full_text, tmp_audio.name))
+                            asyncio.run(generate_audio(full_text, selected_voice_id, tmp_audio.name))
                             st.audio(tmp_audio.name)
                             st.success("جاهز للاستماع الآن!")
                         
