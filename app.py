@@ -3,7 +3,7 @@ import os
 import asyncio
 import edge_tts
 import tempfile
-from pypdf import PdfReader  # المكتبة الجديدة لقراءة الـ PDF مباشرة
+from pypdf import PdfReader
 
 # إعدادات واجهة التطبيق والألوان (CSS)
 st.markdown("""
@@ -65,16 +65,16 @@ st.markdown("""
 def extract_text_from_pdf(pdf_file):
     reader = PdfReader(pdf_file)
     text = ""
-    # المرور على كل صفحات الملف واستخراج النص منها
     for page in reader.pages:
         page_text = page.extract_text()
         if page_text:
             text += page_text + "\n"
     return text
 
-# دالة تحويل النص إلى صوت باستخدام edge-tts
+# دالة تحويل النص إلى صوت باستخدام صوت يدعم العربي والإنجليزي معاً بشكل ممتاز
 async def generate_audio(text, output_file):
-    communicate = edge_tts.Communicate(text, "ar-EG-ShakirNeural")
+    # تم تغيير الصوت هنا إلى ar-EG-SalmaNeural لأنها تدعم الـ Multilingual (عربي وإنجليزي بطلاقة)
+    communicate = edge_tts.Communicate(text, "ar-EG-SalmaNeural")
     await communicate.save(output_file)
 
 # واجهة التطبيق الرئيسية
@@ -85,7 +85,6 @@ if uploaded_file is not None:
     if st.button("قراءة الملف صوتياً"):
         try:
             with st.spinner('جاري قراءة ملف الـ PDF واستخراج النص...'):
-                # استخراج النص مباشرة من الملف المرفوع دون الحاجة لحفظه أو رفعه لجوجل
                 full_text = extract_text_from_pdf(uploaded_file)
                 
                 if not full_text.strip():
@@ -93,12 +92,11 @@ if uploaded_file is not None:
                 else:
                     st.success("تم استخراج النص من الـ PDF بنجاح!")
                     
-                    # عرض جزء من النص للتأكيد (يمكنك قفل الـ expander لمشاهدته)
                     with st.expander("عرض النص المستخرج"):
                         st.write(full_text)
                     
                     # تحويل النص إلى صوت
-                    with st.spinner("جاري تحويل النص إلى صوت..."):
+                    with st.spinner("جاري تحويل النص إلى صوت مجسم (عربي/إنجليزي)..."):
                         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_audio:
                             asyncio.run(generate_audio(full_text, tmp_audio.name))
                             st.audio(tmp_audio.name)
@@ -106,6 +104,3 @@ if uploaded_file is not None:
                         
         except Exception as e:
             st.error(f"حدث خطأ أثناء معالجة الملف: {e}")
-
-# ملاحظة: إذا كان الملف عبارة عن صور مصورة بالموبايل (Scanned) وليست نصوص كمبيوتر،
-# فلن تتمكن مكتبات الـ PDF العادية من قراءتها وستحتاج لتفعيل خاصية الـ OCR مجدداً.
