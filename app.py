@@ -5,6 +5,7 @@ import edge_tts
 import tempfile
 from pypdf import PdfReader  # المكتبة الجديدة لقراءة الـ PDF مباشرة
 
+# إعدادات واجهة التطبيق والألوان (CSS)
 st.markdown("""
     <style>
     .stApp {
@@ -71,11 +72,12 @@ def extract_text_from_pdf(pdf_file):
             text += page_text + "\n"
     return text
 
+# دالة تحويل النص إلى صوت باستخدام edge-tts
 async def generate_audio(text, output_file):
     communicate = edge_tts.Communicate(text, "ar-EG-ShakirNeural")
     await communicate.save(output_file)
 
-# واجهة التطبيق
+# واجهة التطبيق الرئيسية
 st.title("📚 قارئ الملزمة الذكي")
 uploaded_file = st.file_uploader("ارفع ملف الـ PDF هنا:", type="pdf")
 
@@ -87,11 +89,11 @@ if uploaded_file is not None:
                 full_text = extract_text_from_pdf(uploaded_file)
                 
                 if not full_text.strip():
-                    st.warning("لم يتم العثور على نص مقروء في الملف. قد يكون الملف عبارة عن صور (Scanned).")
+                    st.warning("لم يتم العثور على نص مقروء في الملف. قد يكون الملف عبارة عن صور مصورة (Scanned).")
                 else:
                     st.success("تم استخراج النص من الـ PDF بنجاح!")
                     
-                    # عرض جزء من النص للتأكيد (اختياري)
+                    # عرض جزء من النص للتأكيد (يمكنك قفل الـ expander لمشاهدته)
                     with st.expander("عرض النص المستخرج"):
                         st.write(full_text)
                     
@@ -104,15 +106,6 @@ if uploaded_file is not None:
                         
         except Exception as e:
             st.error(f"حدث خطأ أثناء معالجة الملف: {e}")
-```
 
-### 💡 ملاحظة هامة جداً:
-إذا كانت ملفات الـ PDF التي ترفعها عبارة عن **صور مصورة بالموبايل (Scanned PDFs)** وليست نصوصاً رقمية أصلية، فإن مكتبات قراءة الـ PDF العادية لن تجد نصاً لتقرأه. في هذه الحالة فقط ستحتاج إلى تقنية تعرّف على النصوص (OCR) مثل أداة جوجل التي كنت تستخدمها سابقاً، أو مكتبة مثل `easyocr` أو `pytesseract`. 
-
-أما لو كانت الملفات كتباً إلكترونية أو ملازم مكتوبة كمبيوتر ومحفوظة PDF، فالكود الجديد بالأعلى سيشتغل معك بسرعة فائقة وبشكل مباشر تماماً!
-
-<FollowUp>
-جرب الكود ده وقولي:
-* هل اشتغل معاك تمام وبدأ **يستخرج الكلام العربي** صح؟
-* هل الملفات اللي بترفعها **كتب كمبيوتر (Digital)** ولا **مصورة بالموبايل (Scanned)**؟
-</FollowUp>
+# ملاحظة: إذا كان الملف عبارة عن صور مصورة بالموبايل (Scanned) وليست نصوص كمبيوتر،
+# فلن تتمكن مكتبات الـ PDF العادية من قراءتها وستحتاج لتفعيل خاصية الـ OCR مجدداً.
