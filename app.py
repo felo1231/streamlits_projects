@@ -3,9 +3,10 @@ import os
 import asyncio
 import edge_tts
 import tempfile
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
+import json
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
 
 st.markdown("""
     <style>
@@ -68,7 +69,23 @@ SCOPES = [
     'https://www.googleapis.com/auth/documents.readonly'
 ]
 
-    
+# دالة الربط باستعمال Service Account بدون credentials.json محلي
+def get_services():
+    # التحقق مما إذا كانت البيانات مسجلة داخل Streamlit Secrets (على السحابة)
+    if "gcp_service_account" in st.secrets:
+        key_dict = json.loads(st.secrets["gcp_service_account"])
+        creds = service_account.Credentials.from_service_account_info(key_dict, scopes=SCOPES)
+    elif os.path.exists("service_account.json"):
+        # في حال أردت التجربة محلياً باستعمال ملف حساب خدمة محلي
+        creds = service_account.Credentials.from_service_account_file("service_account.json", scopes=SCOPES)
+    else:
+        raise Exception("لم يتم العثور على بيانات الحساب (Service Account Credentials).")
+
+    drive_service = build('drive', 'v3', credentials=creds)
+    docs_service = build('docs', 'v1', credentials=creds)
+    return drive_service, docs_service
+
+
 def upload_and_convert(drive_service, file_path):
     file_metadata = {
         'name': 'Converted_PDF_to_Doc',
@@ -125,4 +142,3 @@ if uploaded_file is not None:
                         
         except Exception as e:
             st.error(f"حدث خطأ: {e}")
-            st.write("تأكد من إعدادات Google Cloud Console ووجود ملف credentials.json.")
