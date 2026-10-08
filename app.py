@@ -3,10 +3,7 @@ import os
 import asyncio
 import edge_tts
 import tempfile
-import json
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
+from pypdf import PdfReader  # المكتبة الجديدة لقراءة الـ PDF مباشرة
 
 st.markdown("""
     <style>
@@ -63,80 +60,59 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# 1. إعداد الصلاحيات
-SCOPES = [
-    'https://www.googleapis.com/auth/drive',
-    'https://www.googleapis.com/auth/documents.readonly'
-]
-
-def get_services():
-    # استخدام st.secrets مباشرة كـ dictionary بدون json.loads
-    if "gcp_service_account" in st.secrets:
-        # إذا كانت مقروءة كـ Dict مباشر من Streamlit Secrets
-        key_dict = dict(st.secrets["gcp_service_account"])
-        creds = service_account.Credentials.from_service_account_info(key_dict, scopes=SCOPES)
-    elif os.path.exists("service_account.json"):
-        creds = service_account.Credentials.from_service_account_file("service_account.json", scopes=SCOPES)
-    else:
-        raise Exception("لم يتم العثور على بيانات الحساب (Service Account Credentials).")
-
-    drive_service = build('drive', 'v3', credentials=creds)
-    docs_service = build('docs', 'v1', credentials=creds)
-    return drive_service, docs_service
-
-def upload_and_convert(drive_service, file_path):
-    file_metadata = {
-        'name': 'Converted_PDF_to_Doc',
-        'mimeType': 'application/vnd.google-apps.document'
-    }
-    media = MediaFileUpload(file_path, mimetype='application/pdf', resumable=True)
-    file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-    return file.get('id')
-
-def extract_text_from_doc(docs_service, document_id):
-    document = docs_service.documents().get(documentId=document_id).execute()
+# دالة استخراج النص من ملف الـ PDF مباشرة
+def extract_text_from_pdf(pdf_file):
+    reader = PdfReader(pdf_file)
     text = ""
-    content = document.get('body').get('content')
-    for item in content:
-        if 'paragraph' in item:
-            for element in item['paragraph']['elements']:
-                if 'textRun' in element:
-                    text += element['textRun']['content']
+    # المرور على كل صفحات الملف واستخراج النص منها
+    for page in reader.pages:
+        page_text = page.extract_text()
+        if page_text:
+            text += page_text + "\n"
     return text
 
 async def generate_audio(text, output_file):
     communicate = edge_tts.Communicate(text, "ar-EG-ShakirNeural")
     await communicate.save(output_file)
 
-# 3. واجهة التطبيق
+# واجهة التطبيق
 st.title("📚 قارئ الملزمة الذكي")
 uploaded_file = st.file_uploader("ارفع ملف الـ PDF هنا:", type="pdf")
 
 if uploaded_file is not None:
-    if st.button("تحويل وقراءة"):
+    if st.button("قراءة الملف صوتياً"):
         try:
-            with st.spinner('جاري الاتصال بجوجل والتحويل...'):
-                # حفظ الملف مؤقتاً
-                with open("temp.pdf", "wb") as f:
-                    f.write(uploaded_file.getbuffer())
+            with st.spinner('جاري قراءة ملف الـ PDF واستخراج النص...'):
+                # استخراج النص مباشرة من الملف المرفوع دون الحاجة لحفظه أو رفعه لجوجل
+                full_text = extract_text_from_pdf(uploaded_file)
                 
-                # الحصول على الخدمات
-                drive_serv, docs_serv = get_services()
-                
-                # الرفع والتحويل
-                doc_id = upload_and_convert(drive_serv, "temp.pdf")
-                st.success("تم التحويل إلى Google Doc بنجاح!")
-                
-                # استخراج النص
-                full_text = extract_text_from_doc(docs_serv, doc_id)
-                st.write("تم استخراج النص بنجاح.")
-                
-                # تحويل لصوت
-                with st.spinner("جاري تحويل النص إلى صوت..."):
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_audio:
-                        asyncio.run(generate_audio(full_text, tmp_audio.name))
-                        st.audio(tmp_audio.name)
-                        st.success("جاهز للاستماع!")
+                if not full_text.strip():
+                    st.warning("لم يتم العثور على نص مقروء في الملف. قد يكون الملف عبارة عن صور (Scanned).")
+                else:
+                    st.success("تم استخراج النص من الـ PDF بنجاح!")
+                    
+                    # عرض جزء من النص للتأكيد (اختياري)
+                    with st.expander("عرض النص المستخرج"):
+                        st.write(full_text)
+                    
+                    # تحويل النص إلى صوت
+                    with st.spinner("جاري تحويل النص إلى صوت..."):
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_audio:
+                            asyncio.run(generate_audio(full_text, tmp_audio.name))
+                            st.audio(tmp_audio.name)
+                            st.success("جاهز للاستماع!")
                         
         except Exception as e:
-            st.error(f"حدث خطأ: {e}")
+            st.error(f"حدث خطأ أثناء معالجة الملف: {e}")
+```
+
+### 💡 ملاحظة هامة جداً:
+إذا كانت ملفات الـ PDF التي ترفعها عبارة عن **صور مصورة بالموبايل (Scanned PDFs)** وليست نصوصاً رقمية أصلية، فإن مكتبات قراءة الـ PDF العادية لن تجد نصاً لتقرأه. في هذه الحالة فقط ستحتاج إلى تقنية تعرّف على النصوص (OCR) مثل أداة جوجل التي كنت تستخدمها سابقاً، أو مكتبة مثل `easyocr` أو `pytesseract`. 
+
+أما لو كانت الملفات كتباً إلكترونية أو ملازم مكتوبة كمبيوتر ومحفوظة PDF، فالكود الجديد بالأعلى سيشتغل معك بسرعة فائقة وبشكل مباشر تماماً!
+
+<FollowUp>
+جرب الكود ده وقولي:
+* هل اشتغل معاك تمام وبدأ **يستخرج الكلام العربي** صح؟
+* هل الملفات اللي بترفعها **كتب كمبيوتر (Digital)** ولا **مصورة بالموبايل (Scanned)**؟
+</FollowUp>
