@@ -69,14 +69,13 @@ SCOPES = [
     'https://www.googleapis.com/auth/documents.readonly'
 ]
 
-# دالة الربط باستعمال Service Account بدون credentials.json محلي
 def get_services():
-    # التحقق مما إذا كانت البيانات مسجلة داخل Streamlit Secrets (على السحابة)
+    # استخدام st.secrets مباشرة كـ dictionary بدون json.loads
     if "gcp_service_account" in st.secrets:
-        key_dict = json.loads(st.secrets["gcp_service_account"])
+        # إذا كانت مقروءة كـ Dict مباشر من Streamlit Secrets
+        key_dict = dict(st.secrets["gcp_service_account"])
         creds = service_account.Credentials.from_service_account_info(key_dict, scopes=SCOPES)
     elif os.path.exists("service_account.json"):
-        # في حال أردت التجربة محلياً باستعمال ملف حساب خدمة محلي
         creds = service_account.Credentials.from_service_account_file("service_account.json", scopes=SCOPES)
     else:
         raise Exception("لم يتم العثور على بيانات الحساب (Service Account Credentials).")
@@ -84,7 +83,6 @@ def get_services():
     drive_service = build('drive', 'v3', credentials=creds)
     docs_service = build('docs', 'v1', credentials=creds)
     return drive_service, docs_service
-
 
 def upload_and_convert(drive_service, file_path):
     file_metadata = {
