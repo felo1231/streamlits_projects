@@ -3,6 +3,7 @@ import os
 import asyncio
 import edge_tts
 import tempfile
+import re
 from pypdf import PdfReader
 
 # إعدادات واجهة التطبيق والألوان (CSS)
@@ -30,15 +31,6 @@ st.markdown("""
         margin-bottom: 2rem;
     }
 
-    .main-title {
-        color: #0f172a;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        font-weight: 800;
-        font-size: 2.3rem;
-        margin-bottom: 10px;
-        text-align: center;
-    }
-
     div.stButton > button {
         background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
         color: #ffffff;
@@ -49,17 +41,37 @@ st.markdown("""
         border: none;
         width: 100%;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
     }
 
     div.stButton > button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.35);
         color: #38bdf8;
     }
     </style>
 """, unsafe_allow_html=True)
 
+# دالة ذكية لتنظيف النص المقلوب وإصلاح التداخل بين العربي والإنجليزي
+def clean_and_fix_text(text):
+    if not text:
+        return ""
+    
+    # إزالة المسافات الزائدة والسطور الفارغة العشوائية
+    text = re.sub(r'\n+', '\n', text)
+    text = re.sub(r' +', ' ', text)
+    
+    # معالجة الكلمات الشائعة المكتوبة بنطق خاطئ في ملازم الكلاود (اختياري لتحسين الجودة)
+    replacements = {
+        "كمبيوتنغ": "Computing",
+        "كلاود": "Cloud",
+        "أوف": "of",
+        "إيه": "A",
+        "أم واحد": "M1",
+        "بؤوجيكت": "Project"
+    }
+    for wrong, right in replacements.items():
+        text = text.replace(wrong, right)
+        
+    return text.strip()
 
 # دالة استخراج النص من ملف الـ PDF مباشرة
 def extract_text_from_pdf(pdf_file):
@@ -69,38 +81,41 @@ def extract_text_from_pdf(pdf_file):
         page_text = page.extract_text()
         if page_text:
             text += page_text + "\n"
-    return text
+            
+    # تنظيف وتصليح النص بعد الاستخراج مباشرة
+    return clean_and_fix_text(text)
 
-# دالة تحويل النص إلى صوت باستخدام صوت يدعم العربي والإنجليزي معاً بشكل ممتاز
+# دالة تحويل النص إلى صوت باستخدام نظام ملائم للغتين
 async def generate_audio(text, output_file):
-    # تم تغيير الصوت هنا إلى ar-EG-SalmaNeural لأنها تدعم الـ Multilingual (عربي وإنجليزي بطلاقة)
+    # استخدام صوت "سلمى" لأنه الأفضل عالمياً في دمج المصطلحات الإنجليزية وسط الكلام العربي دون تشويه
     communicate = edge_tts.Communicate(text, "ar-EG-SalmaNeural")
     await communicate.save(output_file)
 
 # واجهة التطبيق الرئيسية
-st.title("📚 قارئ الملزمة الذكي")
+st.title("📚 قارئ الملزمة الذكي المطور")
 uploaded_file = st.file_uploader("ارفع ملف الـ PDF هنا:", type="pdf")
 
 if uploaded_file is not None:
-    if st.button("قراءة الملف صوتياً"):
+    if st.button("قراءة الملف بصوت نقي ومعالج"):
         try:
-            with st.spinner('جاري قراءة ملف الـ PDF واستخراج النص...'):
+            with st.spinner('جاري قراءة الـ PDF واستخراج النص الذكي...'):
                 full_text = extract_text_from_pdf(uploaded_file)
                 
                 if not full_text.strip():
-                    st.warning("لم يتم العثور على نص مقروء في الملف. قد يكون الملف عبارة عن صور مصورة (Scanned).")
+                    st.warning("لم يتم العثور على نص مقروء في الملف.")
                 else:
-                    st.success("تم استخراج النص من الـ PDF بنجاح!")
+                    st.success("تم استخراج النص وتصحيحه بنجاح!")
                     
-                    with st.expander("عرض النص المستخرج"):
+                    with st.expander("عرض النص بعد المعالجة والتصحيح"):
                         st.write(full_text)
                     
                     # تحويل النص إلى صوت
-                    with st.spinner("جاري تحويل النص إلى صوت مجسم (عربي/إنجليزي)..."):
+                    with st.spinner("جاري توليد الصوت النقي (عربي + إنجليزي لغات)..."):
                         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_audio:
                             asyncio.run(generate_audio(full_text, tmp_audio.name))
                             st.audio(tmp_audio.name)
-                            st.success("جاهز للاستماع!")
+                            st.success("جاهز للاستماع الآن!")
                         
         except Exception as e:
             st.error(f"حدث خطأ أثناء معالجة الملف: {e}")
+فقلبيفغ
