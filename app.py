@@ -118,4 +118,3 @@ if uploaded_file is not None:
                         
         except Exception as e:
             st.error(f"حدث خطأ أثناء معالجة الملف: {e}")
-فقلبيفغ
