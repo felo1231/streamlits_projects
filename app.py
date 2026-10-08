@@ -6,9 +6,10 @@ import tempfile
 import re
 from pypdf import PdfReader
 
-# إعدادات واجهة التطبيق والألوان (CSS)
+# إعدادات واجهة التطبيق وتعديل الألوان إلى الأسود (CSS)
 st.markdown("""
     <style>
+    /* تغيير لون الخلفية المتدرجة */
     .stApp {
         background: linear-gradient(-45deg, #19f775, #19f7b1, #19f7da, #19ecf7, #19cbf7, #19b1f7, #1993f7, #196ef7);
         background-size: 400% 400%;
@@ -21,6 +22,7 @@ st.markdown("""
         100% { background-position: 0% 50%; }
     }
 
+    /* تعديل الصندوق الأبيض الرئيسي وتغيير لون النصوص بداخله للأسود */
     .main .block-container {
         background: rgba(255, 255, 255, 0.92);
         padding: 2.5rem;
@@ -31,9 +33,15 @@ st.markdown("""
         margin-bottom: 2rem;
     }
 
+    /* جعل جميع النصوص، العناوين، والفقرات باللون الأسود */
+    .stApp h1, .stApp h2, .stApp h3, .stApp p, .stApp span, .stApp label, .stApp div {
+        color: #000000 !important;
+    }
+
+    /* تعديل تصميم الأزرار لتظل واضحة */
     div.stButton > button {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        color: #ffffff;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+        color: #ffffff !important; /* كتابة بيضاء داخل الزرار ليكون مقروءاً */
         border-radius: 10px;
         padding: 12px 28px;
         font-weight: 700;
@@ -45,7 +53,7 @@ st.markdown("""
 
     div.stButton > button:hover {
         transform: translateY(-2px);
-        color: #38bdf8;
+        color: #38bdf8 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -59,7 +67,7 @@ def clean_and_fix_text(text):
     text = re.sub(r'\n+', '\n', text)
     text = re.sub(r' +', ' ', text)
     
-    # معالجة الكلمات الشائعة المكتوبة بنطق خاطئ في ملازم الكلاود (اختياري لتحسين الجودة)
+    # معالجة الكلمات الشائعة المكتوبة بنطق خاطئ في ملازم الكلاود
     replacements = {
         "كمبيوتنغ": "Computing",
         "كلاود": "Cloud",
@@ -87,7 +95,7 @@ def extract_text_from_pdf(pdf_file):
 
 # دالة تحويل النص إلى صوت باستخدام نظام ملائم للغتين
 async def generate_audio(text, output_file):
-    # استخدام صوت "سلمى" لأنه الأفضل عالمياً في دمج المصطلحات الإنجليزية وسط الكلام العربي دون تشويه
+    # صوت "سلمى" الأفضل في دمج المصطلحات الإنجليزية وسط العربي
     communicate = edge_tts.Communicate(text, "ar-EG-SalmaNeural")
     await communicate.save(output_file)
 
